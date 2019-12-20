@@ -80,7 +80,7 @@ class PerScreenVariables(bpy.types.PropertyGroup):
 
 
 # Modal operator for changing scenes
-class ModalWorkspaceScene(bpy.types.Operator):
+class WM_OT_modal_workspace_scene(bpy.types.Operator):
     bl_idname = "wm.modal_workspace_scene"
     bl_label = "Each Workspace Remembers A Scene"
     
@@ -110,6 +110,18 @@ class ModalWorkspaceScene(bpy.types.Operator):
         return {'RUNNING_MODAL'}
 
 
+class testingAddOnPreferences(bpy.types.AddonPreferences):
+    bl_idname = __name__
+    
+    # sort-of works, but only enables for the current window.
+    # Once the preferences window is closed, the modal operator is killed.
+    def draw(self, context):
+        layout = self.layout
+        layout.label(text='Add bevel modifier:')
+        row = layout.row()
+        row.operator('wm.modal_workspace_scene', text="turn me on")
+
+
 addon_keymaps = []
 
 
@@ -135,15 +147,17 @@ def register():
     bpy.types.Screen.per_screen_vars = bpy.props.PointerProperty(type=PerScreenVariables)
     
     # Now register the modal operator
-    bpy.utils.register_class(ModalWorkspaceScene)
+    bpy.utils.register_class(WM_OT_modal_workspace_scene)
     
     #run the modal operator
-    bpy.ops.wm.modal_workspace_scene('INVOKE_DEFAULT')
+    #bpy.ops.wm.modal_workspace_scene('INVOKE_DEFAULT')
+    bpy.utils.register_class(testingAddOnPreferences)
 
 
 def unregister():
     # First un-register the modal operator
-    bpy.utils.unregister_class(ModalWorkspaceScene)
+    bpy.utils.unregister_class(testingAddOnPreferences)
+    bpy.utils.unregister_class(WM_OT_modal_workspace_scene)
     
     # now remove the class defining the custom property and how to access it (data is still stored in .blend file though)
     del bpy.types.Screen.per_screen_vars
