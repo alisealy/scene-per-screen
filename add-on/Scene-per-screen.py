@@ -107,11 +107,25 @@ class WM_OT_modal_workspace_scene(bpy.types.Operator):
         return {'PASS_THROUGH'}
     
     def invoke(self, context, event):
-        #self.keepingTrack = {context.workspace:context.scene}
-        self.lastScreen = context.screen
-        
+        self.lastScreen = context.window.screen
         context.window_manager.modal_handler_add(self)
         return {'RUNNING_MODAL'}
+
+
+class WM_OT_modal_workspace_scene_wrapper(bpy.types.Operator):
+    bl_idname = "wm.modal_workspace_scene_wrapper"
+    bl_label = "dummy operator for modal_workspace_scene"
+    
+    def execute(self, context):
+        win = context.window_manager.windows[0]
+        override = {
+            'window': win,
+            'workspace': win.workspace,
+            'screen': win.screen,
+            'scene': win.scene
+        }
+        bpy.ops.wm.modal_workspace_scene(override, 'INVOKE_DEFAULT')
+        return {'FINISHED'}
 
 
 class testingAddOnPreferences(bpy.types.AddonPreferences):
@@ -122,7 +136,8 @@ class testingAddOnPreferences(bpy.types.AddonPreferences):
     def draw(self, context):
         layout = self.layout
         row = layout.row()
-        row.operator('wm.modal_workspace_scene', text="enable automatic scene switching")
+        row.operator_context = 'INVOKE_DEFAULT'
+        row.operator('wm.modal_workspace_scene_wrapper', text="enable automatic scene switching")
 
 
 addon_keymaps = []
@@ -152,16 +167,20 @@ def register():
     # Now register the modal operator
     bpy.utils.register_class(WM_OT_modal_workspace_scene)
     
-    # add addon preferences panel with a button to enable the modal operator
-    #bpy.utils.register_class(testingAddOnPreferences)
+    # register wrapper operator
+    bpy.utils.register_class(WM_OT_modal_workspace_scene_wrapper)
     
-    # execute the modal operator
-    bpy.ops.wm.modal_workspace_scene('INVOKE_DEFAULT')
+    # add addon preferences panel with a button to enable the modal operator
+    bpy.utils.register_class(testingAddOnPreferences)
+    
+    # execute the modal operator (only use if running as a script)
+    #bpy.ops.wm.modal_workspace_scene('INVOKE_DEFAULT')
 
 
 def unregister():
     # First un-register the modal operator
     bpy.utils.unregister_class(testingAddOnPreferences)
+    bpy.utils.unregister_class(WM_OT_modal_workspace_scene_wrapper)
     bpy.utils.unregister_class(WM_OT_modal_workspace_scene)
     
     # now remove the class defining the custom property and how to access it (data is still stored in .blend file though)
