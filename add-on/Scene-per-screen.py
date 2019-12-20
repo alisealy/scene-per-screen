@@ -92,19 +92,23 @@ class WM_OT_modal_workspace_scene(bpy.types.Operator):
     
     def modal(self, context, event):
         if event.type == 'MOUSEMOVE':
-            if not (self.lastWorkspace == context.workspace):
-                self.keepingTrack[self.lastWorkspace] = context.scene
-                if context.workspace in self.keepingTrack.keys():
-                    context.window.scene = self.keepingTrack[context.workspace]
-                else:
-                    self.keepingTrack[context.workspace] = context.scene
-                self.lastWorkspace = context.workspace
+            if not (self.lastScreen == context.screen):
+                # remember the scene for the previous workspace
+                self.lastScreen.per_screen_vars.scene = context.scene.name
+                
+                #new version
+                memory = context.screen.per_screen_vars.scene
+                if memory in bpy.data.scenes:
+                    context.window.scene = bpy.data.scenes[memory]
+                
+                #continue
+                self.lastScreen = context.screen
         
         return {'PASS_THROUGH'}
     
     def invoke(self, context, event):
-        self.keepingTrack = {context.workspace:context.scene}
-        self.lastWorkspace = context.workspace
+        #self.keepingTrack = {context.workspace:context.scene}
+        self.lastScreen = context.screen
         
         context.window_manager.modal_handler_add(self)
         return {'RUNNING_MODAL'}
@@ -117,9 +121,8 @@ class testingAddOnPreferences(bpy.types.AddonPreferences):
     # Once the preferences window is closed, the modal operator is killed.
     def draw(self, context):
         layout = self.layout
-        layout.label(text='Add bevel modifier:')
         row = layout.row()
-        row.operator('wm.modal_workspace_scene', text="turn me on")
+        row.operator('wm.modal_workspace_scene', text="enable automatic scene switching")
 
 
 addon_keymaps = []
@@ -149,9 +152,11 @@ def register():
     # Now register the modal operator
     bpy.utils.register_class(WM_OT_modal_workspace_scene)
     
-    #run the modal operator
-    #bpy.ops.wm.modal_workspace_scene('INVOKE_DEFAULT')
-    bpy.utils.register_class(testingAddOnPreferences)
+    # add addon preferences panel with a button to enable the modal operator
+    #bpy.utils.register_class(testingAddOnPreferences)
+    
+    # execute the modal operator
+    bpy.ops.wm.modal_workspace_scene('INVOKE_DEFAULT')
 
 
 def unregister():
