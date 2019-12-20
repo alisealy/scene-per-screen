@@ -25,6 +25,15 @@ bl_info = {
 
 import bpy
 
+"""
+Note: at the moment, the automatic scene-switching must be manually enabled from the preferences window,
+this must be done every time the add-on is enabled, and every time blender is re-started. This is kinda annoying.
+
+In the short-term the control could be moved to the main GUI window, or mapped to a shortcut, or both.
+
+In the long term some way should be found to have this enabled automatically.
+"""
+
 
 #class to define custom pop-up menu for switching worspaces
 class WORKSPACE_OT_select(bpy.types.Operator):
