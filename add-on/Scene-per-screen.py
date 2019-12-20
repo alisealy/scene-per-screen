@@ -187,9 +187,6 @@ def register():
     bpy.utils.register_class(WM_OT_modal_workspace_scene_wrapper)
     bpy.utils.register_class(testingAddOnPreferences)
     
-    # execute the modal operator (only use if running as a script)
-    #bpy.ops.wm.modal_workspace_scene('INVOKE_DEFAULT')
-
 
 def unregister():
     # First un-register the modal operator
@@ -215,5 +212,7 @@ def unregister():
 
 if __name__ == "__main__":
     register()
+    # execute the modal operator
+    bpy.ops.wm.modal_workspace_scene('INVOKE_DEFAULT')
 
 
