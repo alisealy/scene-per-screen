@@ -1,3 +1,4 @@
+
 bl_info = {
     "name": "Scene-per-screen",
     "category": "Interface",
@@ -93,15 +94,14 @@ class WM_OT_modal_workspace_scene(bpy.types.Operator):
     def modal(self, context, event):
         if event.type == 'MOUSEMOVE':
             if not (self.lastScreen == context.screen):
-                # remember the scene for the previous workspace
+                # save the screen/scene pair for the previous workspace before we change anything
                 self.lastScreen.per_screen_vars.scene = context.scene.name
                 
-                #new version
+                # if the remembered scene exists, switch to that.
                 memory = context.screen.per_screen_vars.scene
                 if memory in bpy.data.scenes:
                     context.window.scene = bpy.data.scenes[memory]
-                
-                #continue
+                # make a note of what screen we are on now
                 self.lastScreen = context.screen
         
         return {'PASS_THROUGH'}
@@ -112,6 +112,7 @@ class WM_OT_modal_workspace_scene(bpy.types.Operator):
         return {'RUNNING_MODAL'}
 
 
+# wrapper operator, sets a custom context and calls the modal operator
 class WM_OT_modal_workspace_scene_wrapper(bpy.types.Operator):
     bl_idname = "wm.modal_workspace_scene_wrapper"
     bl_label = "dummy operator for modal_workspace_scene"
@@ -128,11 +129,10 @@ class WM_OT_modal_workspace_scene_wrapper(bpy.types.Operator):
         return {'FINISHED'}
 
 
+# addon preferences panel, with a button to start the modal operator
 class testingAddOnPreferences(bpy.types.AddonPreferences):
     bl_idname = __name__
     
-    # sort-of works, but only enables for the current window.
-    # Once the preferences window is closed, the modal operator is killed.
     def draw(self, context):
         layout = self.layout
         row = layout.row()
@@ -164,13 +164,9 @@ def register():
     bpy.utils.register_class(PerScreenVariables)
     bpy.types.Screen.per_screen_vars = bpy.props.PointerProperty(type=PerScreenVariables)
     
-    # Now register the modal operator
+    # Now register the modal operator, wrapper, and preferences panel
     bpy.utils.register_class(WM_OT_modal_workspace_scene)
-    
-    # register wrapper operator
     bpy.utils.register_class(WM_OT_modal_workspace_scene_wrapper)
-    
-    # add addon preferences panel with a button to enable the modal operator
     bpy.utils.register_class(testingAddOnPreferences)
     
     # execute the modal operator (only use if running as a script)
@@ -183,7 +179,7 @@ def unregister():
     bpy.utils.unregister_class(WM_OT_modal_workspace_scene_wrapper)
     bpy.utils.unregister_class(WM_OT_modal_workspace_scene)
     
-    # now remove the class defining the custom property and how to access it (data is still stored in .blend file though)
+    # now remove the class defining the custom property and how to access it
     del bpy.types.Screen.per_screen_vars
     bpy.utils.unregister_class(PerScreenVariables)
     
