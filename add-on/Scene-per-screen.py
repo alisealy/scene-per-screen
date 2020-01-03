@@ -1,3 +1,4 @@
+
 # Copyright 2019 Alistair Sealy
 
 # ##### BEGIN GPL LICENSE BLOCK #####
@@ -24,6 +25,7 @@ bl_info = {
 }
 
 import bpy
+import functools
 
 """
 Note: at the moment, the automatic scene-switching must be manually enabled from the preferences window,
@@ -167,7 +169,34 @@ class testingAddOnPreferences(bpy.types.AddonPreferences):
         row.operator('wm.modal_workspace_scene_wrapper', text="enable automatic scene switching")
 
 
+#lastScreen = {bpy.context.window : bpy.context.screen}
+def scene_daemon(lastScreen):
+    # do this stuff only for some condition we have identified
+    
+    # if the last screen (a variable called lastScreen) is the same as the current one, do nothing.
+    #global lastScreen
+    for window in bpy.context.window_manager.windows:
+        if window not in lastScreen.keys():
+            lastScreen[window] = window.screen
+            # need to check for a memory here
+        elif not (lastScreen[window] == window.screen):
+            # if the screen has changed, do stuff
+            
+            # save the screen/scene pair for the previous workspace before we change anything
+            lastScreen[window].per_screen_vars.scene = window.scene.name
+            
+            # if the remembered scene exists, switch to that.
+            memory = window.screen.per_screen_vars.scene
+            if memory in bpy.data.scenes:
+                window.scene = bpy.data.scenes[memory]
+            # make a note of what screen we are on now
+            lastScreen[window] = window.screen
+    return 0.001
+
+
 addon_keymaps = []
+context_window = bpy.context.window_manager.windows[-1]
+proxyname = functools.partial(scene_daemon, {context_window : context_window.screen})
 
 
 def register():
@@ -191,17 +220,25 @@ def register():
     bpy.utils.register_class(PerScreenVariables)
     bpy.types.Screen.per_screen_vars = bpy.props.PointerProperty(type=PerScreenVariables)
     
+    # register the timer function
+    #context = bpy.context.window_manager.windows[-1]
+    bpy.app.timers.register(proxyname)
+    # Note: needs to first set the scene of whatever screen is currently displaying, because that one will get reset otherwise
+    
     # Now register the modal operator, wrapper, and preferences panel
-    bpy.utils.register_class(WM_OT_modal_workspace_scene)
-    bpy.utils.register_class(WM_OT_modal_workspace_scene_wrapper)
-    bpy.utils.register_class(testingAddOnPreferences)
+#    bpy.utils.register_class(WM_OT_modal_workspace_scene)
+#    bpy.utils.register_class(WM_OT_modal_workspace_scene_wrapper)
+#    bpy.utils.register_class(testingAddOnPreferences)
     
 
 def unregister():
     # First un-register the modal operator
-    bpy.utils.unregister_class(testingAddOnPreferences)
-    bpy.utils.unregister_class(WM_OT_modal_workspace_scene_wrapper)
-    bpy.utils.unregister_class(WM_OT_modal_workspace_scene)
+#    bpy.utils.unregister_class(testingAddOnPreferences)
+#    bpy.utils.unregister_class(WM_OT_modal_workspace_scene_wrapper)
+#    bpy.utils.unregister_class(WM_OT_modal_workspace_scene)
+    
+    # unregister the timer function
+    bpy.app.timers.unregister(proxyname)
     
     # now remove the class defining the custom property and how to access it
     del bpy.types.Screen.per_screen_vars
@@ -222,6 +259,6 @@ def unregister():
 if __name__ == "__main__":
     register()
     # execute the modal operator
-    bpy.ops.wm.modal_workspace_scene('INVOKE_DEFAULT')
+    #bpy.ops.wm.modal_workspace_scene('INVOKE_DEFAULT')
 
 
