@@ -109,55 +109,7 @@ class PerScreenVariables(bpy.types.PropertyGroup):
     )
 
 
-# Modal operator for changing scenes
-class WM_OT_modal_workspace_scene(bpy.types.Operator):
-    bl_idname = "wm.modal_workspace_scene"
-    bl_label = "Each Workspace Remembers A Scene"
-    
-    def __init__(self):
-        print("Start")
-        
-    def __del__(self):
-        print("End")
-    
-    def modal(self, context, event):
-        if event.type == 'MOUSEMOVE':
-            if not (self.lastScreen == context.screen):
-                # save the screen/scene pair for the previous workspace before we change anything
-                self.lastScreen.per_screen_vars.scene = context.scene.name
-                
-                # if the remembered scene exists, switch to that.
-                memory = context.screen.per_screen_vars.scene
-                if memory in bpy.data.scenes:
-                    context.window.scene = bpy.data.scenes[memory]
-                # make a note of what screen we are on now
-                self.lastScreen = context.screen
-        
-        return {'PASS_THROUGH'}
-    
-    def invoke(self, context, event):
-        self.lastScreen = context.window.screen
-        context.window_manager.modal_handler_add(self)
-        return {'RUNNING_MODAL'}
-
-
-# wrapper operator, sets a custom context and calls the modal operator
-class WM_OT_modal_workspace_scene_wrapper(bpy.types.Operator):
-    bl_idname = "wm.modal_workspace_scene_wrapper"
-    bl_label = "dummy operator for modal_workspace_scene"
-    
-    def execute(self, context):
-        win = context.window_manager.windows[0]
-        override = {
-            'window': win,
-            'workspace': win.workspace,
-            'screen': win.screen,
-            'scene': win.scene
-        }
-        bpy.ops.wm.modal_workspace_scene(override, 'INVOKE_DEFAULT')
-        return {'FINISHED'}
-
-
+#NOTE: the modal operator has been removed, this is left for reference only
 # addon preferences panel, with a button to start the modal operator
 class testingAddOnPreferences(bpy.types.AddonPreferences):
     bl_idname = __name__
@@ -191,7 +143,7 @@ def scene_daemon(lastScreen):
                 window.scene = bpy.data.scenes[memory]
             # make a note of what screen we are on now
             lastScreen[window] = window.screen
-    return 0.001
+    return 0.001 #this is the delay before the function is called again
 
 
 addon_keymaps = []
@@ -225,18 +177,8 @@ def register():
     bpy.app.timers.register(proxyname)
     # Note: needs to first set the scene of whatever screen is currently displaying, because that one will get reset otherwise
     
-    # Now register the modal operator, wrapper, and preferences panel
-#    bpy.utils.register_class(WM_OT_modal_workspace_scene)
-#    bpy.utils.register_class(WM_OT_modal_workspace_scene_wrapper)
-#    bpy.utils.register_class(testingAddOnPreferences)
-    
 
 def unregister():
-    # First un-register the modal operator
-#    bpy.utils.unregister_class(testingAddOnPreferences)
-#    bpy.utils.unregister_class(WM_OT_modal_workspace_scene_wrapper)
-#    bpy.utils.unregister_class(WM_OT_modal_workspace_scene)
-    
     # unregister the timer function
     bpy.app.timers.unregister(proxyname)
     
